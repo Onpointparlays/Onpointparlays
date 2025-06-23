@@ -34,10 +34,12 @@
         <h2 class="text-xl font-semibold">Free Pick of the Day</h2>
         {% if logged_in and odds_data %}
             {% for sport in odds_data %}
+                {% if sport.events and not loop.first %}
+                    {% continue %}
+                {% endif %}
                 {% if sport.events %}
                     {% set pick = sport.events[0] %}
                     <p class="mt-2">{{ pick.sport_key }}: {{ pick.home_team }} to win ({{ pick.bookmakers[0].markets[0].outcomes[0].price }})</p>
-                    {% break %}
                 {% endif %}
             {% endfor %}
             {% if not locked %}
