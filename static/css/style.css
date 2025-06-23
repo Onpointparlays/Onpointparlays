@@ -4,16 +4,16 @@
 }
 
 header {
-    background: linear-gradient(90deg, #000 0%, #FFD700 100%); /* Gold gradient accent */
+    background: linear-gradient(90deg, #000 0%, #FFD700 100%);
     padding: 2rem;
 }
 
 h1 {
-    text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700; /* Glowing effect */
+    text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700;
 }
 
 .bg-gray-800:hover {
-    background-color: #2d3748; /* Darker hover state */
+    background-color: #2d3748;
     transition: background-color 0.3s;
 }
 
@@ -21,7 +21,7 @@ h1 {
     transition: all 0.3s ease;
 }
 .leaderboard li:hover {
-    background-color: #4a5568; /* Lighter hover for leaderboard */
+    background-color: #4a5568;
     transform: translateX(10px);
 }
 
@@ -29,6 +29,18 @@ h1 {
     transition: border-color 0.3s;
 }
 .login-form input:focus {
-    border-color: #FFD700; /* Gold focus ring */
+    border-color: #FFD700;
     outline: none;
+}
+
+@media (max-width: 640px) {
+    .max-w-md {
+        max-width: 100%;
+    }
+    .max-w-2xl {
+        max-width: 100%;
+    }
+    h1 {
+        font-size: 2rem;
+    }
 }

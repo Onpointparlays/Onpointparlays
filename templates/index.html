@@ -7,6 +7,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body class="bg-black text-white">
     <!-- Hero Section -->
@@ -21,6 +22,10 @@
             {% if show_bonus %}
                 <p class="text-green-400">Daily Login Bonus (+10 XP) claimed!</p>
             {% endif %}
+            <p class="mt-2">Badges: {% for badge in badges %}<span class="text-yellow-400">{{ badge }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+            <form method="POST" action="/open_chest" class="mt-4">
+                <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700" {% if chest >= 1 %}disabled{% endif %}>Open Mystery Chest (+25 XP)</button>
+            </form>
         {% endif %}
     </header>
 

@@ -4,10 +4,12 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a secure key later
 
-# Simple in-memory XP and level system (placeholder)
-user_xp = {'Jordan': 0, 'User2': 150, 'User3': 300}  # Example user data
-xp_to_level = [0, 100, 250, 500]  # Levels 1, 2, 3 (expand later)
-last_login = {}  # Track last login date for daily bonus
+# Gamification data
+user_xp = {'Jordan': 0, 'User2': 150, 'User3': 300}
+xp_to_level = [0, 100, 250, 500]
+last_login = {}
+badges = {'Jordan': [], 'User2': ['Sharp Shooter'], 'User3': ['VIP']}
+mystery_chests = {'Jordan': 0, 'User2': 1, 'User3': 2}
 
 def get_level(xp):
     for i, threshold in enumerate(xp_to_level):
@@ -15,10 +17,10 @@ def get_level(xp):
             return i
     return len(xp_to_level)
 
-# Track locked picks, votes, and parlay hits
+# Track game state
 locked_picks = {}
-votes = {}  # Track votes per user
-parlay_hits = {}  # Track parlay hit status
+votes = {}
+parlay_hits = {}
 
 @app.route('/')
 def home():
@@ -28,21 +30,23 @@ def home():
         level = get_level(xp)
         locked = locked_picks.get(username, False)
         hit = parlay_hits.get(username, False)
-        # Check for daily login bonus and update last_login
         last = last_login.get(username, datetime(1970, 1, 1))
-        show_bonus = False
-        if last.date() < datetime.now().date():
-            user_xp[username] += 10  # +10 XP for daily login
+        show_bonus = last.date() < datetime.now().date()
+        if show_bonus:
+            user_xp[username] += 10
             last_login[username] = datetime.now()
-            show_bonus = True
+        chest = mystery_chests.get(username, 0)
+        user_badges = badges.get(username, [])
     else:
         xp = 0
         level = 0
         locked = False
         hit = False
         show_bonus = False
+        chest = 0
+        user_badges = []
     leaderboard = sorted(user_xp.items(), key=lambda x: x[1], reverse=True)[:3]
-    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, show_bonus=show_bonus)
+    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, show_bonus=show_bonus, chest=chest, badges=user_badges)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -50,6 +54,9 @@ def login():
         username = request.form['username']
         if username not in user_xp:
             user_xp[username] = 0
+            last_login[username] = datetime(1970, 1, 1)
+            badges[username] = []
+            mystery_chests[username] = 0
         session['username'] = username
         return redirect(url_for('home'))
     return render_template('login.html')
@@ -64,7 +71,7 @@ def lock_pick():
     if 'username' in session:
         username = session['username']
         if not locked_picks.get(username, False):
-            user_xp[username] = user_xp.get(username, 0) + 25  # +25 XP for locking
+            user_xp[username] += 25
             locked_picks[username] = True
     return redirect(url_for('home'))
 
@@ -73,7 +80,7 @@ def vote():
     if 'username' in session:
         username = session['username']
         votes[username] = votes.get(username, 0) + 1
-        user_xp[username] = user_xp.get(username, 0) + 10  # +10 XP for voting
+        user_xp[username] += 10
     return redirect(url_for('home'))
 
 @app.route('/hit_parlay', methods=['POST'])
@@ -81,8 +88,19 @@ def hit_parlay():
     if 'username' in session:
         username = session['username']
         if locked_picks.get(username, False) and not parlay_hits.get(username, False):
-            user_xp[username] = user_xp.get(username, 0) + 100  # +100 XP for hitting parlay
+            user_xp[username] += 100
             parlay_hits[username] = True
+            if user_xp[username] >= 100 and 'Sharp Shooter' not in badges[username]:
+                badges[username].append('Sharp Shooter')
+    return redirect(url_for('home'))
+
+@app.route('/open_chest', methods=['POST'])
+def open_chest():
+    if 'username' in session:
+        username = session['username']
+        if mystery_chests[username] < 1:
+            mystery_chests[username] += 1
+            user_xp[username] += 25  # Example chest reward
     return redirect(url_for('home'))
 
 if __name__ == '__main__':
