@@ -13,16 +13,22 @@ def get_level(xp):
             return i
     return len(xp_to_level)
 
+# Track locked picks (placeholder)
+locked_picks = {}
+
 @app.route('/')
 def home():
     if 'username' in session:
         xp = user_xp.get(session['username'], 0)
         level = get_level(xp)
+        username = session['username']
+        locked = locked_picks.get(username, False)
     else:
         xp = 0
         level = 0
+        locked = False
     leaderboard = sorted(user_xp.items(), key=lambda x: x[1], reverse=True)[:3]  # Top 3 users
-    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard)
+    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -37,6 +43,15 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('username', None)
+    return redirect(url_for('home'))
+
+@app.route('/lock_pick', methods=['POST'])
+def lock_pick():
+    if 'username' in session:
+        username = session['username']
+        if not locked_picks.get(username, False):
+            user_xp[username] = user_xp.get(username, 0) + 25  # +25 XP for locking a pick
+            locked_picks[username] = True
     return redirect(url_for('home'))
 
 if __name__ == '__main__':

@@ -16,3 +16,19 @@ h1 {
     background-color: #2d3748; /* Darker hover state */
     transition: background-color 0.3s;
 }
+
+.leaderboard li {
+    transition: all 0.3s ease;
+}
+.leaderboard li:hover {
+    background-color: #4a5568; /* Lighter hover for leaderboard */
+    transform: translateX(10px);
+}
+
+.login-form input {
+    transition: border-color 0.3s;
+}
+.login-form input:focus {
+    border-color: #FFD700; /* Gold focus ring */
+    outline: none;
+}

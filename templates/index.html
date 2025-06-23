@@ -24,7 +24,12 @@
     <!-- Free Pick Card (Blurred until logged in) -->
     <div class="max-w-md mx-auto mt-10 p-6 bg-gray-800 rounded-lg shadow-lg {% if logged_in %}filter-none{% else %}filter blur-sm cursor-pointer{% endif %}" {% if not logged_in %}onclick="showLoginPrompt()"{% endif %}>
         <h2 class="text-xl font-semibold">Free Pick of the Day</h2>
-        <p class="mt-2">{% if logged_in %}Coming soon!{% else %}Log in to unlock today's pick!{% endif %}</p>
+        <p class="mt-2">{% if logged_in %}NBA: Lakers to win (-110){% else %}Log in to unlock today's pick!{% endif %}</p>
+        {% if logged_in and not locked %}
+            <form method="POST" action="/lock_pick" class="mt-4">
+                <button type="submit" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">Lock This Pick (+25 XP)</button>
+            </form>
+        {% endif %}
     </div>
 
     <!-- Leaderboard -->
