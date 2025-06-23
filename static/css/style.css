@@ -1,4 +1,18 @@
 /* Custom styles to complement Tailwind */
 .blur-sm {
-    filter: blur(5px); /* Ensure blur effect works */
+    filter: blur(5px);
+}
+
+header {
+    background: linear-gradient(90deg, #000 0%, #FFD700 100%); /* Gold gradient accent */
+    padding: 2rem;
+}
+
+h1 {
+    text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700; /* Glowing effect */
+}
+
+.bg-gray-800:hover {
+    background-color: #2d3748; /* Darker hover state */
+    transition: background-color 0.3s;
 }

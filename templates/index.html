@@ -16,29 +16,51 @@
     </header>
 
     <!-- Free Pick Card (Blurred until logged in) -->
-    <div class="max-w-md mx-auto mt-10 p-6 bg-gray-800 rounded-lg shadow-lg filter blur-sm">
+    <div class="max-w-md mx-auto mt-10 p-6 bg-gray-800 rounded-lg shadow-lg filter blur-sm cursor-pointer" onclick="showLoginPrompt()">
         <h2 class="text-xl font-semibold">Free Pick of the Day</h2>
         <p class="mt-2">Log in to unlock today's pick!</p>
     </div>
 
-    <!-- Countdown Timer (Placeholder) -->
+    <!-- Countdown Timer -->
     <div class="text-center mt-10">
-        <p class="text-lg">Next Pick Drop: <span id="countdown">Loading...</span></p>
+        <p class="text-lg">Next Pick Drop: <span id="countdown">Calculating...</span></p>
     </div>
 
-    <!-- Basic JavaScript for Countdown (to be enhanced later) -->
+    <!-- JavaScript for Real-Time Countdown and Login Prompt -->
     <script>
-        let timeLeft = 3600; // 1 hour in seconds (placeholder)
-        const countdownElement = document.getElementById('countdown');
+        // Set the next pick drop time (3:00 PM CST tomorrow)
+        const now = new Date();
+        const nextPickDrop = new Date(now);
+        nextPickDrop.setDate(now.getDate() + 1); // Move to tomorrow
+        nextPickDrop.setHours(15, 0, 0, 0); // 3:00 PM CST
 
-        setInterval(() => {
-            let hours = Math.floor(timeLeft / 3600);
-            let minutes = Math.floor((timeLeft % 3600) / 60);
-            let seconds = timeLeft % 60;
+        const countdownElement = document.getElementById('countdown');
+        function updateCountdown() {
+            const now = new Date();
+            const distance = nextPickDrop - now;
+
+            if (distance < 0) {
+                countdownElement.textContent = "Pick drop has passed!";
+                return;
+            }
+
+            const hours = Math.floor(distance / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
             countdownElement.textContent = `${hours}h ${minutes}m ${seconds}s`;
-            timeLeft--;
-            if (timeLeft < 0) timeLeft = 3600; // Reset after 1 hour
-        }, 1000);
+
+            if (distance < 1000) {
+                location.reload(); // Refresh when time reaches zero
+            }
+        }
+
+        setInterval(updateCountdown, 1000);
+        updateCountdown(); // Run immediately
+
+        // Login Prompt Function
+        function showLoginPrompt() {
+            alert("Please log in to view the free pick. (This is a placeholder - functionality to be added later!)");
+        }
     </script>
 </body>
 </html>
