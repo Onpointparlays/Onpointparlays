@@ -1,10 +1,12 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 from datetime import datetime
+import requests
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a secure key later
+API_KEY = 'your_odds_api_key'  # Replace with your actual Odds API key
 
-# Gamification data
+# Simple in-memory XP and level system (placeholder)
 user_xp = {'Jordan': 0, 'User2': 150, 'User3': 300}
 xp_to_level = [0, 100, 250, 500]
 last_login = {}
@@ -21,6 +23,16 @@ def get_level(xp):
 locked_picks = {}
 votes = {}
 parlay_hits = {}
+
+def get_odds_api_data():
+    url = "https://api.the-odds-api.com/v4/sports"
+    params = {
+        'api_key': API_KEY,
+        'regions': 'us',  # US odds
+        'markets': 'h2h,spreads,totals'  # Head-to-head, spreads, totals
+    }
+    response = requests.get(url, params=params)
+    return response.json() if response.status_code == 200 else []
 
 @app.route('/')
 def home():
@@ -46,7 +58,8 @@ def home():
         chest = 0
         user_badges = []
     leaderboard = sorted(user_xp.items(), key=lambda x: x[1], reverse=True)[:3]
-    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, show_bonus=show_bonus, chest=chest, badges=user_badges)
+    odds_data = get_odds_api_data()
+    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, show_bonus=show_bonus, chest=chest, badges=user_badges, odds_data=odds_data)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -100,7 +113,7 @@ def open_chest():
         username = session['username']
         if mystery_chests[username] < 1:
             mystery_chests[username] += 1
-            user_xp[username] += 25  # Example chest reward
+            user_xp[username] += 25
     return redirect(url_for('home'))
 
 if __name__ == '__main__':

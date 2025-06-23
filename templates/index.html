@@ -29,18 +29,28 @@
         {% endif %}
     </header>
 
-    <!-- Free Pick Card (Blurred until logged in) -->
+    <!-- Free Pick Card (Dynamic from Odds API) -->
     <div class="max-w-md mx-auto mt-10 p-6 bg-gray-800 rounded-lg shadow-lg {% if logged_in %}filter-none{% else %}filter blur-sm cursor-pointer{% endif %}" {% if not logged_in %}onclick="showLoginPrompt()"{% endif %}>
         <h2 class="text-xl font-semibold">Free Pick of the Day</h2>
-        <p class="mt-2">{% if logged_in %}NBA: Lakers to win (-110){% else %}Log in to unlock today's pick!{% endif %}</p>
-        {% if logged_in and not locked %}
-            <form method="POST" action="/lock_pick" class="mt-4">
-                <button type="submit" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">Lock This Pick (+25 XP)</button>
-            </form>
-        {% elif logged_in and locked and not hit %}
-            <form method="POST" action="/hit_parlay" class="mt-4">
-                <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Mark as Hit (+100 XP)</button>
-            </form>
+        {% if logged_in and odds_data %}
+            {% for sport in odds_data %}
+                {% if sport.events %}
+                    {% set pick = sport.events[0] %}
+                    <p class="mt-2">{{ pick.sport_key }}: {{ pick.home_team }} to win ({{ pick.bookmakers[0].markets[0].outcomes[0].price }})</p>
+                    {% break %}
+                {% endif %}
+            {% endfor %}
+            {% if not locked %}
+                <form method="POST" action="/lock_pick" class="mt-4">
+                    <button type="submit" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">Lock This Pick (+25 XP)</button>
+                </form>
+            {% elif locked and not hit %}
+                <form method="POST" action="/hit_parlay" class="mt-4">
+                    <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Mark as Hit (+100 XP)</button>
+                </form>
+            {% endif %}
+        {% else %}
+            <p class="mt-2">{% if logged_in %}Loading pick...{% else %}Log in to unlock today's pick!{% endif %}</p>
         {% endif %}
     </div>
 
@@ -76,8 +86,8 @@
         // Set the next pick drop time (3:00 PM CST tomorrow)
         const now = new Date();
         const nextPickDrop = new Date(now);
-        nextPickDrop.setDate(now.getDate() + 1); // Move to tomorrow
-        nextPickDrop.setHours(15, 0, 0, 0); // 3:00 PM CST
+        nextPickDrop.setDate(now.getDate() + 1);
+        nextPickDrop.setHours(15, 0, 0, 0);
 
         const countdownElement = document.getElementById('countdown');
         function updateCountdown() {
@@ -95,12 +105,12 @@
             countdownElement.textContent = `${hours}h ${minutes}m ${seconds}s`;
 
             if (distance < 1000) {
-                location.reload(); // Refresh when time reaches zero
+                location.reload();
             }
         }
 
         setInterval(updateCountdown, 1000);
-        updateCountdown(); // Run immediately
+        updateCountdown();
 
         // Login Prompt Function
         function showLoginPrompt() {
