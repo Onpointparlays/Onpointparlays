@@ -30,16 +30,19 @@ def home():
         hit = parlay_hits.get(username, False)
         # Check for daily login bonus and update last_login
         last = last_login.get(username, datetime(1970, 1, 1))
+        show_bonus = False
         if last.date() < datetime.now().date():
             user_xp[username] += 10  # +10 XP for daily login
             last_login[username] = datetime.now()
+            show_bonus = True
     else:
         xp = 0
         level = 0
         locked = False
         hit = False
+        show_bonus = False
     leaderboard = sorted(user_xp.items(), key=lambda x: x[1], reverse=True)[:3]
-    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, last_login=last_login)
+    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, show_bonus=show_bonus)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

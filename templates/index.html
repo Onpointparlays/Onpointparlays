@@ -18,7 +18,7 @@
         {% else %}
             <a href="/logout" class="mt-4 inline-block bg-red-600 text-white p-2 rounded hover:bg-red-700">Log Out</a>
             <p class="mt-2">XP: {{ xp }} | Level: {{ level }}</p>
-            {% if last_login.get(session['username'], datetime(1970, 1, 1)).date() < datetime.now().date() %}
+            {% if show_bonus %}
                 <p class="text-green-400">Daily Login Bonus (+10 XP) claimed!</p>
             {% endif %}
         {% endif %}
