@@ -33,15 +33,16 @@
     <div class="max-w-md mx-auto mt-10 p-6 bg-gray-800 rounded-lg shadow-lg {% if logged_in %}filter-none{% else %}filter blur-sm cursor-pointer{% endif %}" {% if not logged_in %}onclick="showLoginPrompt()"{% endif %}>
         <h2 class="text-xl font-semibold">Free Pick of the Day</h2>
         {% if logged_in and odds_data %}
+            {% set first_pick = None %}
             {% for sport in odds_data %}
-                {% if sport.events and not loop.first %}
-                    {% continue %}
-                {% endif %}
                 {% if sport.events %}
-                    {% set pick = sport.events[0] %}
-                    <p class="mt-2">{{ pick.sport_key }}: {{ pick.home_team }} to win ({{ pick.bookmakers[0].markets[0].outcomes[0].price }})</p>
+                    {% set first_pick = sport.events[0] %}
+                    {% break %}
                 {% endif %}
             {% endfor %}
+            {% if first_pick %}
+                <p class="mt-2">{{ first_pick.sport_key }}: {{ first_pick.home_team }} to win ({{ first_pick.bookmakers[0].markets[0].outcomes[0].price }})</p>
+            {% endif %}
             {% if not locked %}
                 <form method="POST" action="/lock_pick" class="mt-4">
                     <button type="submit" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">Lock This Pick (+25 XP)</button>
