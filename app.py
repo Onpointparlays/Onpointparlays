@@ -28,7 +28,7 @@ def home():
         level = get_level(xp)
         locked = locked_picks.get(username, False)
         hit = parlay_hits.get(username, False)
-        # Check for daily login bonus
+        # Check for daily login bonus and update last_login
         last = last_login.get(username, datetime(1970, 1, 1))
         if last.date() < datetime.now().date():
             user_xp[username] += 10  # +10 XP for daily login
@@ -39,7 +39,7 @@ def home():
         locked = False
         hit = False
     leaderboard = sorted(user_xp.items(), key=lambda x: x[1], reverse=True)[:3]
-    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit)
+    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, last_login=last_login)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -84,5 +84,5 @@ def hit_parlay():
 
 if __name__ == '__main__':
     import os
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=True)
