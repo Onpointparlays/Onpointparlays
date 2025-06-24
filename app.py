@@ -5,7 +5,7 @@ import requests
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a secure key later
-API_KEY = 'your_odds_api_key'  # Replace with your actual Odds API key
+API_KEY = 'beef82de399058c610840c67429aaf50'  # Your Odds API key
 
 def init_db():
     with sqlite3.connect('users.db') as conn:
@@ -38,8 +38,18 @@ def get_level(xp):
 def get_odds_api_data():
     url = "https://api.the-odds-api.com/v4/sports"
     params = {'api_key': API_KEY, 'regions': 'us', 'markets': 'h2h,spreads,totals'}
-    response = requests.get(url, params=params)
-    return response.json() if response.status_code == 200 else []
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            # Debugging: Print the first few items to check structure
+            print("Odds API Data:", data[:2] if data else "No data")
+            return data
+        print(f"API Error: {response.status_code} - {response.text}")
+        return []
+    except requests.RequestException as e:
+        print(f"API Request Failed: {e}")
+        return []
 
 @app.route('/')
 def home():
@@ -57,10 +67,10 @@ def home():
             xp += 10
             user_data['last_login'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         chest = user_data['chests']
-        user_badges = user_data['badges'].split(',') if user_data['badges'] else []
         if chest < 1 and show_bonus:
             chest += 1
             xp += 25
+        user_badges = user_data['badges'].split(',') if user_data['badges'] else []
         user_data.update({'xp': xp, 'level': level, 'locked': locked, 'hit': hit, 'last_login': user_data['last_login'], 'chests': chest, 'badges': ','.join(user_badges)})
         update_user_data(username, user_data)
     else:
