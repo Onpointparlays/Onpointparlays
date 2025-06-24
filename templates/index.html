@@ -35,7 +35,10 @@
         {% if logged_in and odds_data %}
             {% if odds_data|length > 0 %}
                 {% set pick = odds_data[0] %}
-                <p class="mt-2">{{ pick.sport_key }}: {{ pick.home_team }} vs {{ pick.away_team }} ({{ pick.bookmakers[0].markets[0].outcomes[0].name }} at {{ pick.bookmakers[0].markets[0].outcomes[0].price }})</p>
+                {% set sport_title = 'NFL' if pick.sport_key == 'americanfootball_nfl' else 'NBA' if pick.sport_key == 'basketball_nba' else 'Other' %}
+                <p class="mt-2">{{ sport_title }}:</p>
+                <p class="mt-2">{{ pick.home_team }} vs {{ pick.away_team }}</p>
+                <p class="mt-2">{{ pick.bookmakers[0].markets[0].outcomes[0].name }} money line {{ pick.bookmakers[0].markets[0].outcomes[0].price }}</p>
             {% else %}
                 <p class="mt-2">No picks available right now.</p>
             {% endif %}
