@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.username }}'s Profile - On Point Parlays</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body class="bg-black text-white">
+    <header class="text-center py-10">
+        <h1 class="text-4xl font-bold text-yellow-400">{{ user.username }}'s Profile</h1>
+        <a href="/" class="mt-4 inline-block bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500">Back to Home</a>
+    </header>
+
+    <div class="max-w-md mx-auto mt-10 p-6 bg-gray-800 rounded-lg shadow-lg">
+        <h2 class="text-xl font-semibold">Stats</h2>
+        <ul class="mt-4">
+            <li class="py-2 border-b border-gray-700">XP: {{ user.xp }}</li>
+            <li class="py-2 border-b border-gray-700">Level: {{ user.level }}</li>
+            <li class="py-2 border-b border-gray-700">Chests Remaining: {{ 1 if user.chests < 1 else 0 }}</li>
+            <li class="py-2 border-b border-gray-700">Parlay Count: {{ user.parlay_count }}/3</li>
+        </ul>
+        <h2 class="text-xl font-semibold mt-4">Badges</h2>
+        <p class="mt-2">{% for badge in user.badges %}<span class="text-yellow-400">{{ badge }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        <h2 class="text-xl font-semibold mt-4">Parlay History</h2>
+        <ul class="mt-2">
+            {% for time in user.parlay_history %}
+                <li class="py-2 border-b border-gray-700">{{ time }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
