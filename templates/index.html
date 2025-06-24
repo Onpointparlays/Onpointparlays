@@ -47,21 +47,42 @@
                 <form method="POST" action="/lock_pick" class="mt-4">
                     <button type="submit" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">Lock This Pick (+25 XP)</button>
                 </form>
-                <form method="POST" action="/add_to_parlay" class="mt-2">
-                    <button type="submit" class="w-full bg-purple-600 text-white p-2 rounded hover:bg-purple-700">Add to Parlay</button>
-                </form>
+                {% if parlay_count < 3 %}
+                    <form method="POST" action="/add_to_parlay" class="mt-2">
+                        <button type="submit" class="w-full bg-purple-600 text-white p-2 rounded hover:bg-purple-700">Add to Parlay</button>
+                    </form>
+                {% endif %}
             {% elif locked and not hit %}
                 <form method="POST" action="/hit_parlay" class="mt-4">
                     <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Mark as Hit (+100 XP + Parlay Bonus)</button>
                 </form>
             {% endif %}
             {% if parlay_count > 0 %}
-                <p class="mt-2 text-green-400">Parlay Picks: {{ parlay_count }} (Hit parlay for bonus!)</p>
+                <p class="mt-2 text-green-400">Parlay Picks: {{ parlay_count }}/3</p>
             {% endif %}
         {% else %}
             <p class="mt-2">{% if logged_in %}Loading pick...{% else %}Log in to unlock today's pick!{% endif %}</p>
         {% endif %}
     </div>
+
+    <!-- Parlay Progress Section -->
+    {% if logged_in and parlay_picks %}
+        <div class="max-w-md mx-auto mt-10 p-6 bg-gray-800 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold">Parlay Progress</h2>
+            <ul class="mt-4">
+                {% for pick in parlay_picks %}
+                    <li class="py-2 border-b border-gray-700">
+                        {{ pick.sport_key|replace('americanfootball_nfl', 'NFL')|replace('basketball_nba', 'NBA') }}:
+                        {{ pick.home_team|replace('Philadelphia ', '')|replace('Dallas ', '') }} vs {{ pick.away_team|replace('Philadelphia ', '')|replace('Dallas ', '') }}
+                        - {{ pick.bookmakers[0].markets[0].outcomes[0].name|replace('Dallas ', '') }} Money Line
+                    </li>
+                {% endfor %}
+            </ul>
+            {% if parlay_odds > 0 %}
+                <p class="mt-2 text-green-400">Estimated Parlay Payout: +{{ parlay_odds }}</p>
+            {% endif %}
+        </div>
+    {% endif %}
 
     <!-- Voting Section -->
     <div class="max-w-md mx-auto mt-10 p-6 bg-gray-800 rounded-lg shadow-lg">

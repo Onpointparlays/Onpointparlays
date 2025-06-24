@@ -10,7 +10,7 @@ API_KEY = 'beef82de399058c610840c67429aaf50'  # Your Odds API key
 def init_db():
     with sqlite3.connect('users.db') as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS users
-                        (username TEXT PRIMARY KEY, xp INTEGER, level INTEGER, last_login TEXT, badges TEXT, chests INTEGER, locked INTEGER, hit INTEGER, parlay_count INTEGER)''')
+                        (username TEXT PRIMARY KEY, xp INTEGER, level INTEGER, last_login TEXT, badges TEXT, chests INTEGER, locked INTEGER, hit INTEGER, parlay_count INTEGER, parlay_picks TEXT)''')
         conn.commit()
 
 def get_user_data(username):
@@ -19,14 +19,17 @@ def get_user_data(username):
         cursor = conn.execute('SELECT * FROM users WHERE username = ?', (username,))
         user = cursor.fetchone()
         if user:
-            return dict(user)
-        return {'username': username, 'xp': 0, 'level': 0, 'last_login': '1970-01-01 00:00:00', 'badges': '', 'chests': 0, 'locked': 0, 'hit': 0, 'parlay_count': 0}
+            picks = user['parlay_picks'].split(',') if user['parlay_picks'] else []
+            return dict(user, parlay_picks=picks)
+        return {'username': username, 'xp': 0, 'level': 0, 'last_login': '1970-01-01 00:00:00', 'badges': '', 'chests': 0, 'locked': 0, 'hit': 0, 'parlay_count': 0, 'parlay_picks': ''}
 
 def update_user_data(username, data):
     with sqlite3.connect('users.db') as conn:
-        conn.execute('INSERT OR REPLACE INTO users (username, xp, level, last_login, badges, chests, locked, hit, parlay_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (username, data['xp'], data['level'], data['last_login'], data['badges'], data['chests'], data['locked'], data['hit'], data['parlay_count']))
+        picks = ','.join(data['parlay_picks']) if data['parlay_picks'] else ''
+        conn.execute('INSERT OR REPLACE INTO users (username, xp, level, last_login, badges, chests, locked, hit, parlay_count, parlay_picks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (username, data['xp'], data['level'], data['last_login'], data['badges'], data['chests'], data['locked'], data['hit'], data['parlay_count'], picks))
         conn.commit()
+        print(f"Updated user {username}: xp={data['xp']}, parlay_count={data['parlay_count']}, parlay_picks={picks}")
 
 def get_level(xp):
     levels = [0, 100, 250, 500]
@@ -55,6 +58,19 @@ def get_odds_api_data():
     print("No valid data from any sport")
     return []
 
+def calculate_parlay_odds(picks):
+    if not picks or len(picks) < 2:
+        return 0
+    total_odds = 1
+    for pick in picks:
+        # Simplify: Use the first outcome's price as the odds (convert American odds to decimal for multiplication)
+        odds = pick['bookmakers'][0]['markets'][0]['outcomes'][0]['price']
+        if odds > 0:
+            total_odds *= (odds / 100) + 1
+        else:
+            total_odds *= (100 / abs(odds)) + 1
+    return int((total_odds - 1) * 100)  # Convert back to American odds
+
 @app.route('/')
 def home():
     init_db()
@@ -76,7 +92,8 @@ def home():
             xp += 25
         user_badges = user_data['badges'].split(',') if user_data['badges'] else []
         parlay_count = user_data['parlay_count']
-        user_data.update({'xp': xp, 'level': level, 'locked': locked, 'hit': hit, 'last_login': user_data['last_login'], 'chests': chest, 'badges': ','.join(user_badges), 'parlay_count': parlay_count})
+        parlay_picks = user_data['parlay_picks']
+        user_data.update({'xp': xp, 'level': level, 'locked': locked, 'hit': hit, 'last_login': user_data['last_login'], 'chests': chest, 'badges': ','.join(user_badges), 'parlay_count': parlay_count, 'parlay_picks': parlay_picks})
         update_user_data(username, user_data)
     else:
         xp = 0
@@ -87,13 +104,15 @@ def home():
         chest = 0
         user_badges = []
         parlay_count = 0
+        parlay_picks = []
     leaderboard = []
     with sqlite3.connect('users.db') as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.execute('SELECT username, xp FROM users ORDER BY xp DESC LIMIT 3')
         leaderboard = [dict(row) for row in cursor.fetchall()]
     odds_data = get_odds_api_data()
-    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, show_bonus=show_bonus, chest=chest, badges=user_badges, odds_data=odds_data, parlay_count=parlay_count)
+    parlay_odds = calculate_parlay_odds(parlay_picks) if parlay_picks else 0
+    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, show_bonus=show_bonus, chest=chest, badges=user_badges, odds_data=odds_data, parlay_count=parlay_count, parlay_picks=parlay_picks, parlay_odds=parlay_odds)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -118,7 +137,7 @@ def lock_pick():
     if 'username' in session:
         username = session['username']
         user_data = get_user_data(username)
-        if not user_data['locked']:
+        if not user_data['locked'] and len(user_data['parlay_picks']) < 3:  # Max 3 picks
             user_data['xp'] += 25
             user_data['locked'] = 1
             update_user_data(username, user_data)
@@ -143,11 +162,12 @@ def hit_parlay():
             user_data['hit'] = 1
             if user_data['xp'] >= 100 and 'Sharp Shooter' not in user_data['badges'].split(','):
                 user_data['badges'] = user_data['badges'] + ',Sharp Shooter' if user_data['badges'] else 'Sharp Shooter'
-            if user_data['parlay_count'] >= 2:
+            if user_data['parlay_count'] >= 2 and user_data['parlay_picks']:
                 user_data['xp'] += 50 * user_data['parlay_count']  # Bonus for parlay
                 if 'Parlay Pro' not in user_data['badges'].split(','):
                     user_data['badges'] = user_data['badges'] + ',Parlay Pro' if user_data['badges'] else 'Parlay Pro'
-                user_data['parlay_count'] = 0  # Reset after successful parlay
+                user_data['parlay_count'] = 0
+                user_data['parlay_picks'] = []
             update_user_data(username, user_data)
     return redirect(url_for('home'))
 
@@ -156,10 +176,12 @@ def open_chest():
     if 'username' in session:
         username = session['username']
         user_data = get_user_data(username)
+        print(f"Chest check: chests={user_data['chests']}, xp={user_data['xp']}")
         if user_data['chests'] < 1:
             user_data['chests'] += 1
             user_data['xp'] += 25
             update_user_data(username, user_data)
+            print(f"Chest opened: new chests={user_data['chests']}, new xp={user_data['xp']}")
     return redirect(url_for('home'))
 
 @app.route('/add_to_parlay', methods=['POST'])
@@ -167,10 +189,13 @@ def add_to_parlay():
     if 'username' in session:
         username = session['username']
         user_data = get_user_data(username)
-        if user_data['locked']:
-            user_data['parlay_count'] += 1
-            user_data['locked'] = 0  # Unlock for next pick
-            update_user_data(username, user_data)
+        if user_data['locked'] and len(user_data['parlay_picks']) < 3:  # Max 3 picks
+            odds_data = get_odds_api_data()
+            if odds_data and len(odds_data) > 0:
+                user_data['parlay_picks'].append(odds_data[0])
+                user_data['parlay_count'] += 1
+                user_data['locked'] = 0  # Unlock for next pick
+                update_user_data(username, user_data)
     return redirect(url_for('home'))
 
 if __name__ == '__main__':
