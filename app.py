@@ -36,14 +36,14 @@ def get_level(xp):
     return len(levels)
 
 def get_odds_api_data():
-    url = "https://api.the-odds-api.com/v4/sports"
-    params = {'api_key': API_KEY, 'regions': 'us', 'markets': 'h2h,spreads,totals'}
+    sport = 'basketball_nba'  # Example sport, adjust as needed (e.g., 'americanfootball_nfl')
+    url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds"
+    params = {'api_key': API_KEY, 'regions': 'us', 'markets': 'h2h', 'oddsFormat': 'american'}
     try:
         response = requests.get(url, params=params, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            # Debugging: Print the first few items to check structure
-            print("Odds API Data:", data[:2] if data else "No data")
+            print("Odds API Data:", data[:2] if data else "No data")  # Debug output
             return data
         print(f"API Error: {response.status_code} - {response.text}")
         return []
