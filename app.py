@@ -36,20 +36,24 @@ def get_level(xp):
     return len(levels)
 
 def get_odds_api_data():
-    sport = 'basketball_nba'  # Example sport, adjust as needed (e.g., 'americanfootball_nfl')
-    url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds"
-    params = {'api_key': API_KEY, 'regions': 'us', 'markets': 'h2h', 'oddsFormat': 'american'}
-    try:
-        response = requests.get(url, params=params, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            print("Odds API Data:", data[:2] if data else "No data")  # Debug output
-            return data
-        print(f"API Error: {response.status_code} - {response.text}")
-        return []
-    except requests.RequestException as e:
-        print(f"API Request Failed: {e}")
-        return []
+    sports = ['basketball_nba', 'americanfootball_nfl']  # Try multiple sports
+    for sport in sports:
+        url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds"
+        params = {'api_key': API_KEY, 'regions': 'us', 'markets': 'h2h', 'oddsFormat': 'american'}
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if data and isinstance(data, list) and len(data) > 0:
+                    print("Odds API Data:", data[0])  # Debug first item
+                    return data
+                print(f"No valid odds data for {sport}")
+            else:
+                print(f"API Error for {sport}: {response.status_code} - {response.text}")
+        except requests.RequestException as e:
+            print(f"API Request Failed for {sport}: {e}")
+    print("No valid data from any sport")
+    return []
 
 @app.route('/')
 def home():
