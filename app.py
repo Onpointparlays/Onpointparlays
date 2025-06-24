@@ -10,7 +10,7 @@ API_KEY = 'beef82de399058c610840c67429aaf50'  # Your Odds API key
 def init_db():
     with sqlite3.connect('users.db') as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS users
-                        (username TEXT PRIMARY KEY, xp INTEGER, level INTEGER, last_login TEXT, badges TEXT, chests INTEGER, locked INTEGER, hit INTEGER)''')
+                        (username TEXT PRIMARY KEY, xp INTEGER, level INTEGER, last_login TEXT, badges TEXT, chests INTEGER, locked INTEGER, hit INTEGER, parlay_count INTEGER)''')
         conn.commit()
 
 def get_user_data(username):
@@ -20,12 +20,12 @@ def get_user_data(username):
         user = cursor.fetchone()
         if user:
             return dict(user)
-        return {'username': username, 'xp': 0, 'level': 0, 'last_login': '1970-01-01 00:00:00', 'badges': '', 'chests': 0, 'locked': 0, 'hit': 0}
+        return {'username': username, 'xp': 0, 'level': 0, 'last_login': '1970-01-01 00:00:00', 'badges': '', 'chests': 0, 'locked': 0, 'hit': 0, 'parlay_count': 0}
 
 def update_user_data(username, data):
     with sqlite3.connect('users.db') as conn:
-        conn.execute('INSERT OR REPLACE INTO users (username, xp, level, last_login, badges, chests, locked, hit) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                    (username, data['xp'], data['level'], data['last_login'], data['badges'], data['chests'], data['locked'], data['hit']))
+        conn.execute('INSERT OR REPLACE INTO users (username, xp, level, last_login, badges, chests, locked, hit, parlay_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (username, data['xp'], data['level'], data['last_login'], data['badges'], data['chests'], data['locked'], data['hit'], data['parlay_count']))
         conn.commit()
 
 def get_level(xp):
@@ -36,7 +36,7 @@ def get_level(xp):
     return len(levels)
 
 def get_odds_api_data():
-    sports = ['basketball_nba', 'americanfootball_nfl']  # Try multiple sports
+    sports = ['basketball_nba', 'americanfootball_nfl']
     for sport in sports:
         url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds"
         params = {'api_key': API_KEY, 'regions': 'us', 'markets': 'h2h', 'oddsFormat': 'american'}
@@ -45,7 +45,7 @@ def get_odds_api_data():
             if response.status_code == 200:
                 data = response.json()
                 if data and isinstance(data, list) and len(data) > 0:
-                    print("Odds API Data:", data[0])  # Debug first item
+                    print("Odds API Data:", data[0])
                     return data
                 print(f"No valid odds data for {sport}")
             else:
@@ -75,7 +75,8 @@ def home():
             chest += 1
             xp += 25
         user_badges = user_data['badges'].split(',') if user_data['badges'] else []
-        user_data.update({'xp': xp, 'level': level, 'locked': locked, 'hit': hit, 'last_login': user_data['last_login'], 'chests': chest, 'badges': ','.join(user_badges)})
+        parlay_count = user_data['parlay_count']
+        user_data.update({'xp': xp, 'level': level, 'locked': locked, 'hit': hit, 'last_login': user_data['last_login'], 'chests': chest, 'badges': ','.join(user_badges), 'parlay_count': parlay_count})
         update_user_data(username, user_data)
     else:
         xp = 0
@@ -85,13 +86,14 @@ def home():
         show_bonus = False
         chest = 0
         user_badges = []
+        parlay_count = 0
     leaderboard = []
     with sqlite3.connect('users.db') as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.execute('SELECT username, xp FROM users ORDER BY xp DESC LIMIT 3')
         leaderboard = [dict(row) for row in cursor.fetchall()]
     odds_data = get_odds_api_data()
-    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, show_bonus=show_bonus, chest=chest, badges=user_badges, odds_data=odds_data)
+    return render_template('index.html', logged_in='username' in session, xp=xp, level=level, leaderboard=leaderboard, locked=locked, hit=hit, show_bonus=show_bonus, chest=chest, badges=user_badges, odds_data=odds_data, parlay_count=parlay_count)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -141,6 +143,11 @@ def hit_parlay():
             user_data['hit'] = 1
             if user_data['xp'] >= 100 and 'Sharp Shooter' not in user_data['badges'].split(','):
                 user_data['badges'] = user_data['badges'] + ',Sharp Shooter' if user_data['badges'] else 'Sharp Shooter'
+            if user_data['parlay_count'] >= 2:
+                user_data['xp'] += 50 * user_data['parlay_count']  # Bonus for parlay
+                if 'Parlay Pro' not in user_data['badges'].split(','):
+                    user_data['badges'] = user_data['badges'] + ',Parlay Pro' if user_data['badges'] else 'Parlay Pro'
+                user_data['parlay_count'] = 0  # Reset after successful parlay
             update_user_data(username, user_data)
     return redirect(url_for('home'))
 
@@ -152,6 +159,17 @@ def open_chest():
         if user_data['chests'] < 1:
             user_data['chests'] += 1
             user_data['xp'] += 25
+            update_user_data(username, user_data)
+    return redirect(url_for('home'))
+
+@app.route('/add_to_parlay', methods=['POST'])
+def add_to_parlay():
+    if 'username' in session:
+        username = session['username']
+        user_data = get_user_data(username)
+        if user_data['locked']:
+            user_data['parlay_count'] += 1
+            user_data['locked'] = 0  # Unlock for next pick
             update_user_data(username, user_data)
     return redirect(url_for('home'))
 
