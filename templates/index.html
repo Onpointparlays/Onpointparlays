@@ -38,7 +38,8 @@
                 {% set sport_title = 'NFL' if pick.sport_key == 'americanfootball_nfl' else 'NBA' if pick.sport_key == 'basketball_nba' else 'Other' %}
                 <p class="text-xl font-semibold mt-2">{{ sport_title }}:</p>
                 <p class="mt-2">{{ pick.home_team|replace('Philadelphia ', '')|replace('Dallas ', '') }} vs {{ pick.away_team|replace('Philadelphia ', '')|replace('Dallas ', '') }}</p>
-                <p class="mt-2">Place Bet: {{ pick.bookmakers[0].markets[0].outcomes[0].name|replace('Dallas ', '') }} Money Line</p>
+                <p class="text-xl font-semibold mt-2">Place Bet:</p>
+                <p class="mt-2">{{ pick.bookmakers[0].markets[0].outcomes[0].name|replace('Dallas ', '') }} Money Line</p>
             {% else %}
                 <p class="mt-2">No picks available right now.</p>
             {% endif %}
@@ -103,7 +104,7 @@
 
             const hours = Math.floor(distance / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            the seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
             countdownElement.textContent = `${hours}h ${minutes}m ${seconds}s`;
 
             if (distance < 1000) {
